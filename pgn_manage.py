@@ -6,6 +6,7 @@ from downloaders import *
 
 PGN_SOURCES = ['chesscom', 'lichess']
 
+# Factory helper function for downloader classes.
 def _create_downloader(source, user, output):
     pgn_download_path = os.path.join(output, source)
     if source == 'chesscom':
@@ -13,6 +14,7 @@ def _create_downloader(source, user, output):
     elif source == 'lichess':
         return LichessPGNDownloader(user, pgn_download_path)
 
+# Merge all PGNs in a list of directories (non-recursive) into a single PGN file.
 def _merge_pgns(dirs_to_merge, merged_output_filepath):
     dir_to_pgnfiles = { d : [f for f in os.listdir(d) if f.endswith('.pgn')] for d in dirs_to_merge }
 
@@ -28,19 +30,18 @@ def _merge_pgns(dirs_to_merge, merged_output_filepath):
 
     return True
 
+# Download PGNs from various sources and merge them into one singular PGN file.
 def _download_and_merge(downloaders, merged_output_filepath):
-    # For a singular source, just carry out the download
-    if len(downloaders) == 1:
-        return downloaders[0].do_download()
-    else:
-        dirs_to_merge = []
-        for downloader in downloaders:
-            if not downloader.do_download():
-                return False
+    dirs_to_merge = []
+    for downloader in downloaders:
+        download_directory = downloader.get_where()
+        if not downloader.do_download():
+            print(f'Failed to download to {download_directory}')
+            continue
 
-            dirs_to_merge.append(downloader.get_where())
+        dirs_to_merge.append(download_directory)
 
-        return _merge_pgns(dirs_to_merge, merged_output_filepath)
+    return _merge_pgns(dirs_to_merge, merged_output_filepath)
 
 @click.group()
 def cli():
