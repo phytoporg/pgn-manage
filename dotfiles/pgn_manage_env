@@ -1,0 +1,8 @@
+# Set this value to whichever path houses your pgn-manage git repository
+export PGN_MANAGE_SOURCE_PATH=
+
+# Set to an existing directory where downloaded PGN files can be stored
+export PGN_MANAGE_DOWNLOADS_PATH=
+
+# Assumed to be the username on all platforms (lichess, chess.com)
+export PGN_MANAGE_USERNAME=

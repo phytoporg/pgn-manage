@@ -1,0 +1,39 @@
+#
+# Functions
+#
+pgnm_checkenv() {
+    if [ "${PGN_MANAGE_SOURCE_PATH}" == "" ]; then
+        >&2 echo PGN-MANAGE error: PGN_MANAGE_SOURCE_PATH is not set. 
+        return 255
+    fi
+
+    if [ "${PGN_MANAGE_DOWNLOADS_PATH}" == "" ]; then
+        >&2 echo PGN-MANAGE error: PGN_MANAGE_DOWNLOADS_PATH is not set. 
+        return 255
+    fi
+
+    if [ "${PGN_MANAGE_USERNAME}" == "" ]; then
+        >&2 echo PGN-MANAGE error: PGN_MANAGE_USERNAME is not set. 
+        return 255
+    fi
+}
+
+pgnm_exec() {
+    pgnm_checkenv
+    if [ $? -eq 0 ] ; then
+        # Do the thing
+        pushd $PGN_MANAGE_SOURCE_PATH > /dev/null
+        pipenv run python ./pgn-manage/pgn_manage.py $* > /dev/null &
+        popd > /dev/null
+    fi
+}
+
+pgnm_download() {
+    pgnm_exec download --user $PGN_MANAGE_USERNAME --output PGN_MANAGE_DOWNLOADS_PATH --source all
+}
+
+#
+# Aliases
+#
+
+alias chessdl="pgnm_checkenv $*"
