@@ -3,6 +3,7 @@ import os
 import sys
 
 from downloaders import *
+from pgn_parser import *
 
 PGN_SOURCES = ['chesscom', 'lichess']
 
@@ -24,14 +25,28 @@ def _merge_pgns(dirs_to_merge, merged_output_filepath):
     dir_to_pgnfiles = { d : [f for f in os.listdir(d) if f.endswith('.pgn')] for d in dirs_to_merge }
 
     with open(merged_output_filepath, 'w+', encoding='utf-8') as fw:
+        games = []
         for d in dir_to_pgnfiles:
             for f in dir_to_pgnfiles[d]:
                 pgn_filepath = os.path.join(d, f)
 
-                print(f'Merging {pgn_filepath} into {merged_output_filepath}...', end='')
-                with open(pgn_filepath, 'r') as fr:
-                    fw.write(fr.read())
-                print(' done!')
+                try:
+                    parser = PGNParser(pgn_filepath)
+                    for game in parser.get_games():
+                        games.append(game)
+                except FileExistsError as e:
+                    print(f'Failed to parse PGN: {e}', file=sys.stderr)
+                except ValueError as e:
+                    print(f'Failed to parse PGN: {e}', file=sys.stderr)
+
+        games.sort(key=lambda x: x.get_datetime())
+
+        print(f'Merging {len(games)} games into {merged_output_filepath}...', end='')
+        with open(pgn_filepath, 'r') as fr:
+            for game in games:
+                fw.write(game.get_pgn_string())
+                fw.write('\n\n')
+        print(' done!')
 
     return True
 
