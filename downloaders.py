@@ -1,8 +1,7 @@
 from codecs import open
 from datetime import date
 from datetime import datetime
-import os.path
-import requests
+import os
 import requests
 import sys
 import time

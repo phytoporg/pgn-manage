@@ -1,5 +1,5 @@
 import click
-import os.path
+import os
 import sys
 
 from downloaders import *
@@ -9,6 +9,11 @@ PGN_SOURCES = ['chesscom', 'lichess']
 # Factory helper function for downloader classes.
 def _create_downloader(source, user, output):
     pgn_download_path = os.path.join(output, source)
+
+    if not os.path.exists(pgn_download_path):
+        print(f"Path not found: {pgn_download_path}. Creating.")
+        os.makedirs(pgn_download_path)
+
     if source == 'chesscom':
         return ChessComPGNDownloader(user, pgn_download_path)
     elif source == 'lichess':
