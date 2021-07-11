@@ -67,7 +67,7 @@ class ChessComPGNDownloader:
 
 # lichess.api.user_games doesn't support all of the parameters supported by the actual API,
 # and won't let us filter by begin/end times, so we'll do it ourselves
-def _get_api_text(url_template, endpoint, params):
+def _lichess_get_api_text(url_template, endpoint, params):
     get_path = url_template.format(endpoint)
 
     params_string = '&'.join([f'{k}={v}' for k, v in params.items()])
@@ -80,7 +80,7 @@ def _get_api_text(url_template, endpoint, params):
     else:
         return r.text
 
-def _download_all_from_month(year, month, user, where):
+def _lichess_download_all_from_month(year, month, user, where):
     # Start at the previous month
     if month == 1:
         year -= 1
@@ -91,7 +91,7 @@ def _download_all_from_month(year, month, user, where):
     today = datetime.today()
     while datetime(year=year, month=month, day=1) <= today:
         print(f'Downloading games for {year}-{month:02}...')
-        _download_pgn_for_month(year, month, user, where)
+        _lichess_download_pgn_for_month(year, month, user, where)
 
         if month == 12:
             year += 1
@@ -99,7 +99,7 @@ def _download_all_from_month(year, month, user, where):
         else:
             month += 1
 
-def _download_pgn_for_month(year, month, user, where):
+def _lichess_download_pgn_for_month(year, month, user, where):
     start_dt = datetime(year=year, month=month, day=1)
     start_time_ms = int(time.mktime(start_dt.timetuple()) * 1000)
 
@@ -110,14 +110,14 @@ def _download_pgn_for_month(year, month, user, where):
 
     end_time_ms = int(time.mktime(end_dt.timetuple()) * 1000)
     params = { 'since' : start_time_ms, 'until' : end_time_ms }
-    pgn_text = _get_api_text(LICHESS_URL_TEMPLATE, f'games/user/{user}', params)
+    pgn_text = _lichess_get_api_text(LICHESS_URL_TEMPLATE, f'games/user/{user}', params)
 
     if pgn_text:
         target_pgn_filepath = os.path.join(where, f'{year}-{month:02}.pgn')
         with open(target_pgn_filepath, 'w') as f:
             f.write(pgn_text)
 
-def _get_yearmonth_from_games(user):
+def _lichess_get_yearmonth_from_games(user):
     # Try and get all of the games. Hopefully this user doesn't have too many
     # games on record!
     games = lichess.api.user_games(user, format=JSON)
@@ -131,7 +131,7 @@ def _get_yearmonth_from_games(user):
 
     return (earliest_dt.year, earliest_dt.month)
 
-def _get_yearmonth_from_dir(user, where):
+def _lichess_get_yearmonth_from_dir(user, where):
     # Assuming we store PGNs in this path in the format: YYYY-MM.pgn
     pgns_in_path = sorted([pgn for pgn in os.listdir(where) if pgn.endswith('.pgn')])
 
@@ -160,10 +160,10 @@ class LichessPGNDownloader:
     # Actually perform the download
     def do_download(self):
         # Default to the month before the last stored PGN file
-        yearmonth_tuple = _get_yearmonth_from_dir(self.user, self.where)
+        yearmonth_tuple = _lichess_get_yearmonth_from_dir(self.user, self.where)
         if not yearmonth_tuple:
             # Download as many games as possible
-            yearmonth_tuple = _get_yearmonth_from_games(self.user)
+            yearmonth_tuple = _lichess_get_yearmonth_from_games(self.user)
 
             if not yearmonth_tuple:
                 print(f'Failed to retrieve games for {self.user}', file=sys.stderr)
@@ -173,6 +173,6 @@ class LichessPGNDownloader:
         # Update all games since and including the latest month for which
         # there is already data.
         year, month = yearmonth_tuple
-        _download_all_from_month(year, month, self.user, self.where)
+        _lichess_download_all_from_month(year, month, self.user, self.where)
 
         return True
