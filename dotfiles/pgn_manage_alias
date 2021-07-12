@@ -43,4 +43,4 @@ pgnm_download() {
 # Aliases
 #
 
-lias chessdl="pgnm_download"
+alias chessdl="pgnm_download"
