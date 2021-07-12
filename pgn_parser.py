@@ -1,7 +1,15 @@
 import os
+import sys
 from game_details import *
 
-def _parse_tag_line(line):
+def _err(filename, line, msg, do_raise = False):
+    error_string = f"{filename}:{line}: {msg}"
+    if do_raise:
+        raise ValueError(error_string)
+    else:
+        print(error_string, file=sys.stderr)
+
+def _parse_tag_line(line, line_number):
     # PGN metadata tags are formatted as:
     # [Key "Value"]
     #
@@ -11,19 +19,20 @@ def _parse_tag_line(line):
     # assert where our assumptions break.
     close_bracket_location = line.find(']')
     if close_bracket_location < 1:
-        raise ValueError(f'{self.pgn_file}:{line_number}: Expected closing bracket')
+        _err(self.pgn_file, line_number, 'Expected closing bracket', do_raise=True)
 
     if line.find('[', close_bracket_location) > 0:
-        raise NotImplementedError(
-            f'{self.pgn_file}:{line_number}: Found multiple tags per line.' \
-             'This is not yet supported.')
+        # Valid per the PGN spec, but not supported.
+        _err(self.pgn_file, line_number, 'Found multiple tags per line.', do_raise=True)
 
     # Check quotes for the tag value                            
     opening_quote_location = line.find('"')
     closing_quote_location = line.rfind('"') 
 
-    if (opening_quote_location < 0) or (closing_quote_location <= opening_quote_location):
-        raise ValueError(f'{self.pgn_file}:{line_number}: Malformed tag value quotes')
+    if (opening_quote_location < 0) or \
+       (closing_quote_location <= opening_quote_location) or \
+       (closing_quote_location >= close_bracket_location):
+        _err(self.pgn_file, line_number, 'Malformed tag value quotes', do_raise=True)
                                 
     # Okay, we should be all set
     key = line[1:opening_quote_location].strip()
@@ -55,10 +64,9 @@ class PGNParser:
                     continue
 
                 if line[0] == '[':
-                    key, value = _parse_tag_line(line)
+                    key, value = _parse_tag_line(line, line_number)
                     if key in metadata:
-                        # Just a warning for now. This really shouldn't happen.
-                        print(f'{self.pgn_file}:{line_number}: Duplicate tag. Overwriting previous value.')
+                        _err(self.pgn_file, line_number, 'Duplicate tag. Overwriting previous value.')
 
                     metadata[key] = value
                 else:
@@ -72,13 +80,13 @@ class PGNParser:
                             success = False
 
                     if not success:                            
-                        raise ValueError(f"{self.pgn_file}:{line_number}: Unexpected start of line")
+                        _err(self.pgn_file, line_number, 'Unexpected start of line', do_raise=True)
 
                     if starting_move == 1 or include_partial_games:
                         # Assuming moves exist on one single line for each game.
                         yield GameDetails(metadata, line)
                     else:
-                        print("{self.pgn_file}:{line_number}: Skipping partial game")
+                        _err(self.pgn_file, line_number, 'Skipping partial game.')
 
                     # Clear out the state after parsing a game
                     metadata = {}
