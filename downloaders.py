@@ -16,7 +16,7 @@ LICHESS_URL_TEMPLATE  = 'https://lichess.org/api/{}'
 
 # Helper functions
 def _get(uri):
-    r = requests.get(uri)
+    r = requests.get(uri, headers={"User-Agent":"pgn-manage"})
     return r.json() if r.status_code == 200 else None
 
 # Download driver
