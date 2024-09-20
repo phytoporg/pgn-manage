@@ -52,6 +52,9 @@ class ChessComPGNDownloader:
             try:
                 with open(filename, 'w', encoding='utf-8') as fw:
                     for game in games:
+                        if 'pgn' not in game:
+                            print("skipping game", game['rules'])
+                            continue
                         print(game['pgn'], file=fw)
                         print('', file=fw)
             except Exception as e:
